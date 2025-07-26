@@ -2,6 +2,8 @@
 
 This project implements a multilingual Retrieval-Augmented Generation (RAG) system that answers Bengali and English questions based on the _HSC26 Bangla 1st Paper_ textbook. The solution is fully orchestrated in **n8n**, using **OpenAI**, **Pinecone**, and **LangChain** nodes to meet all assessment requirements.
 
+You can directly avail this agent via:[10MS HSC Bangla Telegram Bot](https://t.me/tenms_hsc_bangla_bot)
+
 ---
 
 ## 🎯 Objective
