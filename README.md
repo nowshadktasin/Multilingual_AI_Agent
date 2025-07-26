@@ -93,35 +93,76 @@ cd hsc-rag-agent
 
 ## ❓ Assessment Questions & Answers
 
-### What method or library did you use to extract the text, and why?  
-We used `LangChain Document Loader` in n8n to parse the PDF (via Google Drive). This ensures structured loading and supports direct piping into text splitters.
 
-### Did you face any formatting challenges with the PDF content?  
-Minor formatting challenges occurred due to Bengali font issues in certain PDF layouts. Text extraction from Google Docs version was more stable.
+---
 
-### What chunking strategy did you choose, and why?  
-We used `RecursiveCharacterTextSplitter` with chunk size ~500 tokens and overlap. This approach balances semantic relevance and LLM context window constraints.
+### 1. **What method or library did you use to extract the text, and why? Did you face any formatting challenges with the PDF content?**
 
-### What embedding model did you use, and why?  
-`OpenAI Embeddings` due to its strong multilingual understanding and compatibility with Pinecone. It captures sentence-level semantics effectively.
+The system uses the **Default Data Loader** from `n8n-nodes-langchain.documentDefaultDataLoader`, which internally relies on **LangChain’s Document Loaders**. The source file is pulled from **Google Drive** using `googleDrive` integration. This method is reliable for parsing both English and Bangla PDF/DOCX content with minimal setup inside n8n.
 
-### How are you comparing the query with your stored chunks?  
-We embed the user query and use cosine similarity within Pinecone to retrieve the top-3 relevant chunks.
+**Why:** It is natively compatible with n8n and doesn't require external Python scripts.  
+**Formatting Challenge:** While loading worked well, Bangla text may sometimes face alignment or OCR-related issues, which should be handled with preprocessing if required.
 
-### Why did you choose this similarity method and storage setup?  
-Cosine similarity with Pinecone ensures scalable and fast semantic retrieval, while OpenAI embeddings ensure language coverage (including Bengali).
+---
 
-### How do you ensure meaningful comparison between queries and document chunks?  
-By using standardized embeddings for both, and retrieving semantically similar content. All LLM answers are gated through a vector tool call.
+### 2. **What chunking strategy did you choose (e.g. paragraph-based, sentence-based, character limit)? Why do you think it works well for semantic retrieval?**
 
-### What happens if the query is vague or missing context?  
-The system is instructed to politely ask the user to clarify the question in their preferred language (Bangla or English).
+The workflow uses **Recursive Character Text Splitter**, a LangChain strategy applied via `textSplitterRecursiveCharacterTextSplitter`. It splits long content based on character limits with overlaps, preserving context.
 
-### Do the results seem relevant? What might improve them?  
-Yes, results match expected answers. Future improvements could include:
-- Sentence-level chunking for better pinpointing
-- Evaluation dashboard for automated QA scoring
-- Bengali-native embedding model (e.g. `BanglaBERT`) for finer alignment
+**Why It Works:**  
+- It keeps semantically meaningful text units.
+- Works across multilingual (Bangla + English) input.
+- Enables better vector representation for Pinecone retrieval.
+
+---
+
+### 3. **What embedding model did you use? Why did you choose it? How does it capture the meaning of the text?**
+
+The embedding model used is **OpenAI’s `text-embedding-ada-002`**, accessed via the `Embeddings OpenAI` node in n8n.
+
+**Why Chosen:**  
+- It is multilingual and performs well in low-resource languages like Bangla.
+- Fast, cost-effective, and integrates smoothly into LangChain + n8n.
+- Converts chunks into dense vectors that capture semantic meaning across contexts.
+
+---
+
+### 4. **How are you comparing the query with your stored chunks? Why did you choose this similarity method and storage setup?**
+
+**Similarity Method:** Cosine similarity  
+**Vector Store:** Pinecone (`vectorStorePinecone`)
+
+**Why This Setup:**  
+- Pinecone offers high-speed approximate nearest neighbor (ANN) search.
+- Cosine similarity is well-suited for comparing OpenAI embeddings.
+- This combo ensures fast, semantically relevant retrievals even for Bangla queries.
+
+---
+
+### 5. **How do you ensure that the question and the document chunks are compared meaningfully? What would happen if the query is vague or missing context?**
+
+- The **same embedding model** is used for both query and document chunks, ensuring semantic alignment.
+- A **memory buffer** (via `memoryBufferWindow`) retains short-term context, improving multi-turn interactions.
+- If a query is vague or unrelated, the AI Agent responds as follows:
+
+> Bangla: “দুঃখিত, আমি এই প্রশ্নের নির্ভরযোগ্য উত্তর খুঁজে পাইনি।”  
+> English: “Sorry, I could not find a reliable answer in the document.”
+
+This prevents hallucinations or guessing.
+
+---
+
+### 6. **Do the results seem relevant? If not, what might improve them (e.g. better chunking, better embedding model, larger document)?**
+
+✅ The results are accurate for both Bangla and English questions based on known test cases (`শুম্ভুনাথ`, `মামাকে`, `১৫ বছর` etc.).
+
+**To improve further:**
+- Use **sentence-paragraph hybrid** chunking for better granularity.
+- Try newer multilingual models like **`bge-m3`, `instructor-xl`, or `LaBSE`** for Bangla-specific enhancements.
+- Expand corpus with **HSC annotations or question banks**.
+
+---
+
 
 ---
 
